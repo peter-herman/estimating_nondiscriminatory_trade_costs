@@ -1,0 +1,27 @@
+industry_id, industry_name
+1, Wheat
+2, Rice
+3, Corn
+4, Other cereals
+5, Cereal products
+6, Soybeans
+7, Other oilseeds
+8, Animal feed
+9, Sugar
+10, Other sweeteners 
+11, Pulses and legumes
+12, Fresh fruit
+13, Fresh vegetables
+14, Prepared fruits and juices
+15, Prepared vegetables
+16, Nuts
+17, Live cattle
+18, Live swine
+19, Eggs
+20, Other meats
+21, Cocoa and products
+22, Beverages
+23, Cotton
+24, Tobacco
+25, Spices
+26, Other agriculture n.e.s.
