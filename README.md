@@ -81,7 +81,7 @@ Country Information
 
 This script prepares a collection of gravity samples and estimates, sector-by-sector, six different gravity specifications. It also produces the table of the distribution of NTM coverage.
 
-Given the number of models that must be estimated, the process can be significantly sped up by dividing the analysis into different groups of sectors and estimating simultaneously in different Python instances. Visual code, which can open up a bunch of separate terminals, worked well for this.
+Given the number of models that must be estimated, the process can be significantly sped up by dividing the analysis into different groups of sectors and estimating simultaneously in different Python instances. Visual Studio Code, which can open up multiple separate terminals, worked well for this.
 
 #### Data Inputs
 Data inputs all created from Step 1.
@@ -98,8 +98,8 @@ Data inputs all created from Step 1.
 The analysis completes a series of 6 sets of gravity specifications. Each specification produces two files for each sector (three in the HLY specification).
 
 * **<sector_id>_fe_ests.csv**:  A csv file containing the importer and exporter fixed effect estimates for each country (stored as a bilateral panel)
-* **<sector_id>_param_ests.dta**: A table of regression estimates, std. errs., etc. for each sector. Stored as a Stata table so that the estimates for both Stata and Python produced estimates match in format.
-* (DT2_HLY only) **<sector_id>_log_with_delta_se.log**: A Stata log file of the regression that includes a printout of the standard errors calculated from via delta method. 
+* **<sector_id>_param_ests.dta**: A table of regression estimates, std. errors, etc. for each sector. Stored as a Stata table so that the estimates for both Stata and Python produced estimates match in format.
+* (DT2_HLY only) **<sector_id>_log_with_delta_se.log**: A Stata log file of the regression that includes a printout of the standard errors calculated via the delta method. 
 
 The 6 different gravity specifications store their output in different directories within "analysis/results".
 * **DA2_expend**: Domestic Trade, all countries, 2-way gravity, trade/expenditures
