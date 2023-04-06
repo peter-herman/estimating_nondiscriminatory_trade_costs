@@ -40,7 +40,7 @@ bilat_data['trade_gdp'] = bilat_data['trade_value'] / (bilat_data['GDP_nom_full'
 wheat_data = bilat_data.loc[bilat_data['industry_descr']=='Wheat',:]
 
 # ----
-# Step 1: Estimate 1st stage (using GME package)
+# Step 2: Estimate 1st stage (using GME package)
 # ----
 
 # Create a GME data model
@@ -48,15 +48,25 @@ gme_data = gme.EstimationData(wheat_data, imp_var_name='importer', exp_var_name=
                               trade_var_name='trade_value', sector_var_name='industry_descr')
 
 # Define GME estimation specification
-est_model = gme.EstimationModel(gme_data,
+est_model = gme.EstimationModel(
+                                # Data
+                                gme_data,
+                                # Dependent, "left-hand side" variable
                                 lhs_var='trade_gdp',
+                                # Independent, "right-hand side" variables
                                 rhs_var=['contiguity', 'common_language', 'agree_fta', 'member_eu_joint',
                                          'member_wto_joint', 'ln_distance', 'colony_ever', 'international'],
+                                # Run each sector individually rather than pooled
                                 sector_by_sector=True,
+                                # Fixed effects: exporter-year and importer-year
                                 fixed_effects=[['exporter', 'year'], ['importer', 'year']],
-                                omit_fixed_effect=[['exporter','year']])
+                                # Exclude an exporter-year fixed effects to avoid collinearity
+                                omit_fixed_effect=[['exporter','year']]
+                                )
 
+# Estimate model
 results = est_model.estimate()
+
 # Print estimation results
 results['Wheat'].summary()
 
@@ -91,27 +101,27 @@ exporter_year_fe_ARG2012     5.8551      0.955      6.131      0.000       3.983
 
 
 # ----
-# Step 2: Generate AVEs from importer fixed effects
+# Step 3: Generate AVEs from importer fixed effects
 # ----
 
-# Extract fixed effect estimates from gravity results
+# Extract fixed effect parameter estimates from gravity results
 parameter_ests = results['Wheat'].params
 imp_fe = parameter_ests.loc[parameter_ests.index.str.startswith(('importer_year_fe'))]
 
-# Convert series to data frame and add some identifier columns back in
+# Convert parameter vector to data frame and add some identifier columns back in
 imp_fe = pd.DataFrame(imp_fe, columns=['imp_fe'])
-imp_fe['iso3_d'] = imp_fe.index.str[17:20]
-imp_fe['year'] = imp_fe.index.str[20:24]
-imp_fe['year'] = imp_fe['year'].astype(int)
+imp_fe['iso3_d'] = imp_fe.index.str[17:20] # Grab country ISO from fix effect name
+imp_fe['year'] = imp_fe.index.str[20:24] # Grab year from fix effect name
+imp_fe['year'] = imp_fe['year'].astype(int) # Convert year to integer from string
 imp_fe['industry_descr'] = 'Wheat'
 imp_fe['industry_id'] = 1
 
-# Determine baseline/max FE values
+# Determine maximum FE values for each sector/year to use as benchmark values
 max_fe = imp_fe.groupby(['industry_descr', 'year']).agg({'imp_fe':'max'}).reset_index()
 max_fe.rename(columns = {'imp_fe':'max_imp_fe'}, inplace = True)
 imp_fe = imp_fe.merge(max_fe, how = 'outer', on = ['industry_descr', 'year'], validate ='m:1')
 
-# Compute AVE:  T = 100 * [exp{(mu - mu_benchmark)/(1-sigma)}-1]
+# Compute total AVE for each estimate:  T = 100 * [exp{(mu - mu_benchmark)/(1-sigma)}-1]
 imp_fe['fe_diff'] = imp_fe['imp_fe'] - imp_fe['max_imp_fe']
 sigma = 7
 ave_function = lambda x: 100*(np.exp(x / (1 - sigma)) - 1)
@@ -120,25 +130,37 @@ imp_fe['total_ave'] = imp_fe['fe_diff'].apply(ave_function)
 # Print stats about total estimated AVEs
 imp_fe['total_ave'].describe()
 
+'''
+count    349.000000
+mean     138.662007
+std      107.708260
+min        0.000000
+25%       50.915685
+50%      119.471636
+75%      209.836338
+max      657.371242
+'''
+
 
 # -----
 # Step 4: Prepare Second stage, unilateral data
 # -----
 
+# Combine total AVE estimates with country-level data
 ave_data = imp_fe.merge(unilat_data, how = 'left', on=['iso3_d', 'year', 'industry_id'], validate = '1:1')
 
-# Generate year fixed effects
+# Generate year fixed effects and add to data
 year_fe = pd.get_dummies(ave_data['year'], prefix='year_fe')
-
 ave_data = pd.concat([ave_data, year_fe], axis = 1)
 
 # Define set of controls/covariates (excluding 2010 year fixed effect)
 control_vars = ['mfn_average', 'avg_ntm_A', 'GDP_nom', 'GDPPC_nom', 'max_imp_fe', 'year_fe_2011', 'year_fe_2012',
-                'year_fe_2013', 'year_fe_2014', 'year_fe_2015',]
+                'year_fe_2013', 'year_fe_2014', 'year_fe_2015']
 
+# Estimate OLS model of covariates on estimated AVE totals
 second_stage_ests = sm.OLS(endog = ave_data['total_ave'], exog= ave_data[control_vars],
                                   missing='drop').fit(cov_type = 'HC1')
-second_stage_ests.summary()
+print(second_stage_ests.summary())
 
 """
                             OLS Regression Results                            
