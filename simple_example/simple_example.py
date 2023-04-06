@@ -1,5 +1,4 @@
 __Author__ = "Peter Herman"
-__Created__ = "April 06, 2023"
 __Description__ = '''A simple example demonstrating the two-stage methodology. The analysis runs the first and 
 second stage for wheat trade and a small sample of major importers/exporters. The analysis does not necessarily follow 
 all recommendations from the paper for the sake of simplicity. All required data files are available at 
